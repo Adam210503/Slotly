@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const API = "http://127.0.0.1:8000/api";
+const API = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000/api";
 
 const SHOP_IMG = "https://lh3.googleusercontent.com/aida-public/AB6AXuAYE_1RlMii-zwce5xoGe-_AQcyhNC2MXXnCLHRugYZbYbJfbwUl2C79ouJpms8hK78JGeZIs-Z9EvC3ItKSxOL73mJMBDrI9QPkv4qJlBX5jjCPb9SXuMKBN9aN2MP4aFGyltoFpFNZJJOikKUxV1aLIb8zfEIYeJt_DBp7EcbNvaaJ-9zcv1rnJm8kKpW8AHf2uit4kFv0qshYxb_tDLEwfm6IWI0cghWzWf50aaO0VYBQGPiaK1rQg6_b2VrFYF2ks5GxdjBOPo";
 const AVATAR_IMG = "https://lh3.googleusercontent.com/aida-public/AB6AXuDHl-KjFHqbsHCO04mxY4Gzz0a9FXXUrhDZL_v0y_8bNahG7BwbqgoY9HBhC6zKl_LbyT431EOHHF7yJrluLPWjJX5FfzvOJl9uHPUw3RAbBmFIHecmmW--VXAF4-9k1mQjJ07gErIvECBGLst1ML0Zy3xcKSolQkW4VW17aidWczXj_KRdxaDEpeqc6QsmYz3eCvL9_-HGJYYP89bGgYPSHMt_lXCqX-VimKq1Ny-A1Q0kWGStuve5abixy0JkeQPBL-eZm5a6PjE";
