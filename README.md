@@ -2,6 +2,10 @@
 
 AI-powered slot and incentive management for barbershops and salons. Customers book haircuts and get AI-recommended discounts for off-peak slots; shop owners get an AI demand forecast and a dashboard to manage incentives.
 
+**Live**: https://slotly-frontend.onrender.com (API: https://slotly-backend-sozd.onrender.com)
+
+Both run on Render's free tier and spin down after ~15 min idle — the first request after that takes 30-60s to wake up.
+
 ## Stack
 
 - **Backend**: FastAPI + OpenAI (`gpt-4o`) for incentive recommendations and demand forecasting
@@ -50,4 +54,13 @@ npm start
 
 Opens at `http://localhost:3000`.
 
-Both servers need to be running for the app to work — the frontend calls the backend at `http://127.0.0.1:8000/api`.
+Both servers need to be running for the app to work — the frontend calls the backend at `http://127.0.0.1:8000/api` by default.
+
+## Deployment
+
+`render.yaml` defines both services as a Render Blueprint (Dashboard → New + → Blueprint → select this repo). After the first deploy, set these in each service's Environment tab:
+
+- `slotly-backend`: `OPENAI_API_KEY` (your key), `ALLOWED_ORIGIN` (the frontend's URL)
+- `slotly-frontend`: `REACT_APP_API_URL` (the backend's URL + `/api`)
+
+`REACT_APP_API_URL` is baked in at build time, so changing it requires a manual redeploy of `slotly-frontend` to take effect.
