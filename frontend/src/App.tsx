@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Map, AdvancedMarker } from "@vis.gl/react-google-maps";
 
 const API = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000/api";
 
@@ -58,6 +59,9 @@ export default function App() {
   const [selectedShop, setSelectedShop] = useState<Shop>(SHOPS[0]);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
   const [confirmation, setConfirmation] = useState<Booking | null>(null);
   const [forecast, setForecast] = useState<ForecastReport | null>(null);
   const [loadingForecast, setLoadingForecast] = useState(false);
@@ -70,7 +74,13 @@ export default function App() {
   const [businessOffer, setBusinessOffer] = useState("Free hair wash with every weekday booking");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", bizName: "", location: "", service: "", price: "" });
 
-  useEffect(() => { if (page === "shop") fetch(`${API}/slots`).then(r => r.json()).then(setSlots); }, [page]);
+  useEffect(() => {
+    if (page === "shop") {
+      fetch(`${API}/slots?date=${selectedDate}`)
+        .then(r => r.json())
+        .then(setSlots);
+    }
+  }, [page, selectedDate]);
   useEffect(() => { if (page === "owner-dashboard") { setLoadingForecast(true); fetch(`${API}/slots/demand-forecast`).then(r => r.json()).then(d => { setForecast(d); setLoadingForecast(false); }); } }, [page]);
 
   async function handleBook() {
@@ -102,7 +112,7 @@ export default function App() {
 
   // ─── SPLASH ───
   if (page === "splash") return (
-    <div key={page} className="min-h-screen bg-black flex flex-col items-center px-8 py-16">
+    <div key={page} className="min-h-screen bg-black flex flex-col items-center px-8 py-16 page-enter">
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="relative w-20 h-20 mb-6">
           <div className="w-20 h-20 bg-[#131b2e] rounded-3xl flex items-center justify-center">
@@ -124,7 +134,7 @@ export default function App() {
 
   // ─── SIGNUP TYPE ───
   if (page === "signup-type") return (
-    <div key={page} className={styles.container}>
+    <div key={page} className={styles.container + " page-enter"}>
       <div className="pt-10 px-5 pb-16">
         <div className="text-3xl font-bold tracking-tight text-center mb-2">Join Slotly as...</div>
         <div className="text-sm text-[#45464d] text-center mb-8">Choose the account type that best fits your needs to get started with seamless scheduling.</div>
@@ -154,7 +164,7 @@ export default function App() {
 
   // ─── SIGNUP CUSTOMER ───
   if (page === "signup-customer") return (
-    <div key={page} className={styles.container}>
+    <div key={page} className={styles.container + " page-enter"}>
       <div className="px-5 pt-6"><button onClick={() => setPage("signup-type")}><Icon name="arrow_back" /></button></div>
       <div className="px-6 pt-2 pb-16">
         <div className="text-3xl font-bold tracking-tight text-center mb-2">Join our community</div>
@@ -187,7 +197,7 @@ export default function App() {
 
   // ─── SIGNUP BUSINESS ───
   if (page === "signup-business") return (
-    <div key={page} className={styles.container}>
+    <div key={page} className={styles.container + " page-enter"}>
       <div className="flex justify-end px-5 pt-6"><button onClick={() => setPage("login")} className="border border-[#c6c6cd] rounded-full px-4 py-2 text-xs font-semibold">Already have a shop? Sign in</button></div>
       <div className="px-5 pt-5 pb-16">
         <div className="relative rounded-2xl overflow-hidden h-40 mb-5">
@@ -234,7 +244,7 @@ export default function App() {
 
   // ─── LOGIN ───
   if (page === "login") return (
-    <div key={page} className={styles.container}>
+    <div key={page} className={styles.container + " page-enter"}>
       <header className={styles.header}>
         <button onClick={() => setPage("splash")}><Icon name="arrow_back" /></button>
         <span className={styles.headerTitle}>Slotly</span>
@@ -255,7 +265,7 @@ export default function App() {
 
   // ─── LANDING ───
   if (page === "landing") return (
-    <div key={page} className={styles.container}>
+    <div key={page} className={styles.container + " page-enter"}>
       <header className={styles.header}>
         <span className={styles.headerTitle}>Slotly</span>
         <div className="flex items-center gap-2">
@@ -267,11 +277,25 @@ export default function App() {
         <div className="text-[11px] uppercase tracking-widest text-[#45464d] mb-1">Refined Grooming</div>
         <div className="text-3xl font-bold tracking-tight mb-5">Welcome back, {user?.name?.split(" ")[0] ?? "there"}</div>
 
-        <div className="relative rounded-2xl overflow-hidden h-44 mb-6 bg-[#dcd9db]">
-          <div className="absolute inset-0 flex items-center justify-center"><Icon name="map" className="text-6xl text-[#76777d]" /></div>
-          <span className="absolute top-3 left-3 bg-white rounded-full px-3 py-1 text-xs font-semibold flex items-center gap-1"><Icon name="location_on" className="text-sm text-red-500" />{selectedShop.location}</span>
-          <span className="absolute bottom-3 left-3 bg-white rounded-full px-3 py-1 text-xs font-semibold">{SHOPS[0].name} · {SHOPS[0].distance}</span>
-          <div className="absolute bottom-3 right-3 w-10 h-10 bg-black rounded-full flex items-center justify-center"><Icon name="content_cut" className="text-white" /></div>
+        <div className="relative rounded-2xl overflow-hidden h-44 mb-6">
+          <Map
+            mapId="slotly-map"
+            defaultCenter={{ lat: 1.2763, lng: 103.8440 }}
+            defaultZoom={14}
+            gestureHandling="greedy"
+            disableDefaultUI={true}
+            style={{ width: "100%", height: "100%" }}
+          >
+            {SHOPS.map(shop => (
+              <AdvancedMarker
+                key={shop.id}
+                position={shop.id === "kens" ? { lat: 1.2763, lng: 103.8440 } : shop.id === "upper" ? { lat: 1.2817, lng: 103.8461 } : { lat: 1.2838, lng: 103.8435 }}
+              />
+            ))}
+          </Map>
+          <span className="absolute top-3 left-3 bg-white rounded-full px-3 py-1 text-xs font-semibold flex items-center gap-1 z-10">
+            <Icon name="location_on" className="text-sm text-red-500" />Tanjong Pagar
+          </span>
         </div>
 
         <div className="flex justify-between items-baseline mb-3"><div className="font-bold text-lg">Curated Offers</div><button className="text-xs font-semibold text-[#45464d]">View All</button></div>
@@ -318,7 +342,7 @@ export default function App() {
 
   // ─── SHOP PAGE ───
   if (page === "shop") return (
-    <div key={page} className={styles.container + " pb-10"}>
+    <div key={page} className={styles.container + " pb-10 page-enter"}>
       <header className={styles.header}>
         <button onClick={() => setPage("landing")}><Icon name="arrow_back" /></button>
         <span className={styles.headerTitle}>Slotly</span>
@@ -352,7 +376,16 @@ export default function App() {
 
           <div className="flex justify-between items-center mb-3">
             <div className="text-base font-bold">Available Slots</div>
-            <div className="text-xs text-[#45464d] uppercase tracking-widest">Sat 27 Jun</div>
+            <input
+              type="date"
+              value={selectedDate}
+              min={new Date().toISOString().split("T")[0]}
+              onChange={e => {
+                setSelectedDate(e.target.value);
+                setSelectedSlot(null);
+              }}
+              className="text-xs border border-[#c6c6cd] rounded-full px-3 py-1.5 text-[#45464d] focus:outline-none focus:border-black bg-white"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-6">
@@ -415,7 +448,7 @@ export default function App() {
 
   // ─── BOOKING CONFIRM ───
   if (page === "booking-confirm" && confirmation) return (
-    <div key={page} className={styles.container + " px-5 pt-10 pb-16"}>
+    <div key={page} className={styles.container + " px-5 pt-10 pb-16 page-enter"}>
       <div className="flex flex-col items-center text-center mb-6">
         <div className="w-20 h-20 rounded-full bg-[#F0FDF4] border-4 border-[#DCFCE7] flex items-center justify-center mb-5">
           <Icon name="check" className="text-[#22C55E] text-4xl" />
@@ -457,13 +490,24 @@ export default function App() {
       <button onClick={() => { setSelectedSlot(null); setConfirmation(null); setPage("landing"); }} className={styles.secondaryBtn + " mb-8"}>Go to My Bookings</button>
 
       <div className="flex justify-between items-baseline mb-3"><div className="font-bold">Location</div><button className="text-xs font-semibold text-[#45464d] underline">Get Directions</button></div>
-      <div className="rounded-2xl overflow-hidden h-36 bg-[#dcd9db] flex items-center justify-center"><Icon name="map" className="text-5xl text-[#76777d]" /></div>
+      <div className="rounded-2xl overflow-hidden h-36">
+        <Map
+          mapId="slotly-confirm-map"
+          defaultCenter={{ lat: 1.2763, lng: 103.8440 }}
+          defaultZoom={15}
+          gestureHandling="none"
+          disableDefaultUI={true}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <AdvancedMarker position={{ lat: 1.2763, lng: 103.8440 }} />
+        </Map>
+      </div>
     </div>
   );
 
   // ─── LEAVE REVIEW ───
   if (page === "leave-review") return (
-    <div key={page} className={styles.container}>
+    <div key={page} className={styles.container + " page-enter"}>
       <div className="px-5 pt-6"><button onClick={() => setPage("booking-confirm")}><Icon name="arrow_back" /></button></div>
       <div className="px-5 pt-4 pb-16">
         <div className="flex items-center gap-3 border border-[#c6c6cd] rounded-2xl p-3 mb-6">
@@ -501,7 +545,7 @@ export default function App() {
 
   // ─── OWNER DASHBOARD ───
   if (page === "owner-dashboard") return (
-    <div key={page} className={styles.container}>
+    <div key={page} className={styles.container + " page-enter"}>
       <header className={styles.header}>
         <span className={styles.headerTitle}>Slotly</span>
         <div className="flex items-center gap-3">

@@ -72,8 +72,25 @@ DEMAND_PATTERN = {
 }
 
 @router.get("/slots", response_model=list[Slot])
-def get_slots():
-    return SLOTS
+def get_slots(date: str = None):
+    if not date:
+        return SLOTS
+    try:
+        target = datetime.strptime(date, "%Y-%m-%d")
+        updated = []
+        for slot in SLOTS:
+            new_slot = slot.copy()
+            new_slot.start_time = slot.start_time.replace(
+                year=target.year, month=target.month, day=target.day
+            )
+            new_slot.end_time = slot.end_time.replace(
+                year=target.year, month=target.month, day=target.day
+            )
+            new_slot.is_booked = False
+            updated.append(new_slot)
+        return updated
+    except:
+        return SLOTS
 
 @router.get("/slots/available", response_model=list[Slot])
 def get_available_slots():
