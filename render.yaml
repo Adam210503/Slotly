@@ -20,6 +20,8 @@ services:
     envVars:
       - key: REACT_APP_API_URL
         sync: false
+      - key: REACT_APP_GOOGLE_MAPS_KEY
+        sync: false
     routes:
       - type: rewrite
         source: /*

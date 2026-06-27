@@ -9,7 +9,7 @@ Both run on Render's free tier and spin down after ~15 min idle — the first re
 ## Stack
 
 - **Backend**: FastAPI + OpenAI (`gpt-4o`) for incentive recommendations and demand forecasting
-- **Frontend**: React + TypeScript + Tailwind CSS
+- **Frontend**: React + TypeScript + Tailwind CSS + Google Maps (`@vis.gl/react-google-maps`) for shop/booking location
 
 ## Project structure
 
@@ -56,11 +56,21 @@ Opens at `http://localhost:3000`.
 
 Both servers need to be running for the app to work — the frontend calls the backend at `http://127.0.0.1:8000/api` by default.
 
+Create `frontend/.env` for the map to render:
+
+```
+REACT_APP_GOOGLE_MAPS_KEY=AIza...
+```
+
+The Google Cloud project behind that key needs the **Maps JavaScript API** enabled, a billing account linked, and a Map ID of type **JavaScript** (Cloud Console → Google Maps Platform → Map Management).
+
+`REACT_APP_*` vars are only read when the dev server starts — restart `npm start` after creating or changing `frontend/.env`.
+
 ## Deployment
 
 `render.yaml` defines both services as a Render Blueprint (Dashboard → New + → Blueprint → select this repo). After the first deploy, set these in each service's Environment tab:
 
 - `slotly-backend`: `OPENAI_API_KEY` (your key), `ALLOWED_ORIGIN` (the frontend's URL)
-- `slotly-frontend`: `REACT_APP_API_URL` (the backend's URL + `/api`)
+- `slotly-frontend`: `REACT_APP_API_URL` (the backend's URL + `/api`), `REACT_APP_GOOGLE_MAPS_KEY`
 
-`REACT_APP_API_URL` is baked in at build time, so changing it requires a manual redeploy of `slotly-frontend` to take effect.
+`REACT_APP_*` vars are baked in at build time, so changing any of them requires a manual redeploy of `slotly-frontend` to take effect.
