@@ -56,12 +56,15 @@ def generate_slots():
             is_booked=False
         ))
 
-    for i in [3, 4, 9, 10]:
-        slots[i].is_booked = True
-
     return slots
 
 SLOTS = generate_slots()
+BASE_DATE = "2026-06-27"
+
+# Booked state is tracked per (date, slot_id) pair, not on the shared slot
+# template — otherwise booking a slot on one date would mark it booked on
+# every date forever.
+BOOKED_KEYS: set[tuple[str, str]] = {(BASE_DATE, SLOTS[i].id) for i in [3, 4, 9, 10]}
 
 # Synthetic demand pattern — mimics real barbershop foot traffic data
 DEMAND_PATTERN = {
@@ -73,32 +76,33 @@ DEMAND_PATTERN = {
 
 @router.get("/slots", response_model=list[Slot])
 def get_slots(date: str = None):
-    if not date:
-        return SLOTS
+    target_date = date or BASE_DATE
     try:
-        target = datetime.strptime(date, "%Y-%m-%d")
-        updated = []
-        for slot in SLOTS:
-            new_slot = slot.copy()
-            new_slot.start_time = slot.start_time.replace(
-                year=target.year, month=target.month, day=target.day
-            )
-            new_slot.end_time = slot.end_time.replace(
-                year=target.year, month=target.month, day=target.day
-            )
-            new_slot.is_booked = False
-            updated.append(new_slot)
-        return updated
-    except:
-        return SLOTS
+        target = datetime.strptime(target_date, "%Y-%m-%d")
+    except ValueError:
+        target_date = BASE_DATE
+        target = datetime.strptime(BASE_DATE, "%Y-%m-%d")
+
+    updated = []
+    for slot in SLOTS:
+        new_slot = slot.copy()
+        new_slot.start_time = slot.start_time.replace(
+            year=target.year, month=target.month, day=target.day
+        )
+        new_slot.end_time = slot.end_time.replace(
+            year=target.year, month=target.month, day=target.day
+        )
+        new_slot.is_booked = (target_date, slot.id) in BOOKED_KEYS
+        updated.append(new_slot)
+    return updated
 
 @router.get("/slots/available", response_model=list[Slot])
 def get_available_slots():
-    return [s for s in SLOTS if not s.is_booked]
+    return [s for s in get_slots() if not s.is_booked]
 
 @router.get("/slots/offpeak", response_model=list[Slot])
 def get_offpeak_slots():
-    return [s for s in SLOTS if not s.is_peak and not s.is_booked]
+    return [s for s in get_slots() if not s.is_peak and not s.is_booked]
 
 @router.post("/slots/{slot_id}/recommend-incentive", response_model=IncentiveRecommendation)
 async def recommend_incentive(slot_id: str):
@@ -106,7 +110,7 @@ async def recommend_incentive(slot_id: str):
     if not slot:
         return {"error": "Slot not found"}
 
-    booked_count = sum(1 for s in SLOTS if s.is_booked)
+    booked_count = sum(1 for s in SLOTS if (BASE_DATE, s.id) in BOOKED_KEYS)
     occupancy_pct = round((booked_count / len(SLOTS)) * 100)
 
     prompt = f"""
