@@ -1,15 +1,30 @@
 # Slotly
 
-AI-powered slot and incentive management for barbershops and salons. Customers book haircuts and get AI-recommended discounts for off-peak slots; shop owners get an AI demand forecast and a dashboard to manage incentives.
+AI-powered slot and incentive management for barbershops and salons. Customers browse 20 Singapore barbershops, book haircuts, and get AI-recommended discounts for off-peak slots; shop owners get an AI demand forecast, revenue analytics, and a dashboard to manage incentives.
 
 **Live**: https://slotly-frontend.onrender.com (API: https://slotly-backend-sozd.onrender.com)
 
 Both run on Render's free tier and spin down after ~15 min idle — the first request after that takes 30-60s to wake up.
 
+## Features
+
+**Customer**
+- Browse/search 20 Singapore barbershops with ratings, distance, and a map view; sort and filter by distance, favourites, or minimum rating
+- Book a slot per date, with AI-recommended off-peak discounts (booking conflicts are checked per date, not globally)
+- Favourite shops, view upcoming/completed bookings sorted chronologically, leave reviews
+
+**Business owner**
+- Live dashboard: bookings filled, revenue, and off-peak deals, each with a one-sentence AI explanation of what drove the change
+- Revenue breakdown (Today / Month / Year) and a predicted-vs-actual hourly demand chart, both via `recharts`
+- Off-peak deals breakdown by time slot and customer segment (new vs. returning)
+- Real-time bookings list with colour-coded payment status (paid online vs. pay in store), expandable for full customer details
+- 7-day historical data table + revenue trend chart, plus a GPT-4o weekly strategy recommendation
+- Editable business account (name, location, service, price, off-peak discount and time slot)
+
 ## Stack
 
-- **Backend**: FastAPI + OpenAI (`gpt-4o`) for incentive recommendations and demand forecasting
-- **Frontend**: React + TypeScript + Tailwind CSS + Google Maps (`@vis.gl/react-google-maps`) for shop/booking location
+- **Backend**: FastAPI + OpenAI (`gpt-4o`) for incentive recommendations, demand forecasting, and dashboard insights
+- **Frontend**: React + TypeScript + Tailwind CSS + Google Maps (`@vis.gl/react-google-maps`) + `recharts` for analytics charts
 
 ## Project structure
 
