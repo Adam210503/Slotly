@@ -16,6 +16,10 @@
   }
 }
 
+/* Runs the slide-in on a single animation frame, then clears the transform entirely —
+   leaving any `transform` value (even translateY(0)) on this element after the animation
+   ends creates a containing block for fixed-position descendants (header, bottom nav),
+   making them scroll away on any page taller than the viewport instead of staying put. */
 .page-enter {
-  animation: fadeSlideIn 0.5s ease-out forwards;
+  animation: fadeSlideIn 0.5s ease-out;
 }
