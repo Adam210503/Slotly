@@ -115,9 +115,13 @@ function BottomNav({ active, items, onNav }: { active: string; items: { key: str
   );
 }
 
+const API_ROOT = API.replace(/\/api\/?$/, "");
+
 export default function App() {
   const [page, setPage] = useState<Page>("splash");
   const [user, setUser] = useState<User | null>(null);
+  const [serverReady, setServerReady] = useState(false);
+  const [showWakingBanner, setShowWakingBanner] = useState(false);
   const [selectedShop, setSelectedShop] = useState<Shop>(SHOPS[0]);
   const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set(SHOPS.filter(s => s.favourite).map(s => s.id)));
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -136,6 +140,8 @@ export default function App() {
   const [paymentMethod, setPaymentMethod] = useState("apple-pay");
   const [booking, setBooking] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingRevenue, setLoadingRevenue] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [reviewTags, setReviewTags] = useState<string[]>([]);
@@ -157,17 +163,36 @@ export default function App() {
   const [editingBusiness, setEditingBusiness] = useState(false);
 
   useEffect(() => {
+    // Render's free tier spins the backend down after idle — fire a silent warmup ping
+    // as soon as the app loads so the cold start overlaps with the user reading the splash
+    // screen instead of a fetch they're actively waiting on.
+    let cancelled = false;
+    const bannerTimer = setTimeout(() => { if (!cancelled) setShowWakingBanner(true); }, 800);
+    fetch(`${API_ROOT}/`)
+      .catch(() => {})
+      .finally(() => {
+        if (cancelled) return;
+        clearTimeout(bannerTimer);
+        setServerReady(true);
+        setShowWakingBanner(false);
+      });
+    return () => { cancelled = true; clearTimeout(bannerTimer); };
+  }, []);
+  useEffect(() => {
     if (page === "shop") {
+      setLoadingSlots(true);
       fetch(`${API}/slots?date=${selectedDate}`)
         .then(r => r.json())
-        .then(setSlots);
+        .then(setSlots)
+        .finally(() => setLoadingSlots(false));
     }
   }, [page, selectedDate]);
   useEffect(() => { if (page === "owner-dashboard" || page === "owner-data") { setLoadingForecast(true); fetch(`${API}/slots/demand-forecast`).then(r => r.json()).then(d => { setForecast(d); setLoadingForecast(false); }); } }, [page]);
   useEffect(() => {
     if (page !== "owner-dashboard") return;
     fetch(`${API}/slots`).then(r => r.json()).then(setOwnerSlots).catch(() => setOwnerSlots([]));
-    fetch(`${API}/bookings/revenue-breakdown`).then(r => r.json()).then(setRevenueBreakdown).catch(() => setRevenueBreakdown(null));
+    setLoadingRevenue(true);
+    fetch(`${API}/bookings/revenue-breakdown`).then(r => r.json()).then(setRevenueBreakdown).catch(() => setRevenueBreakdown(null)).finally(() => setLoadingRevenue(false));
     fetch(`${API}/bookings/offpeak-today`).then(r => r.json()).then(setOffpeakDeals).catch(() => setOffpeakDeals([]));
     setLoadingInsights(true);
     fetch(`${API}/bookings/metrics-insights`)
@@ -266,6 +291,12 @@ export default function App() {
         </div>
         <div className="text-white text-4xl font-bold tracking-tight mb-2">Slotly</div>
         <div className="text-[#76777d] text-sm">Book smarter. Save more.</div>
+        {showWakingBanner && !serverReady && (
+          <div className="flex items-center gap-2 text-[#76777d] text-xs mt-6">
+            <Icon name="autorenew" className="text-sm animate-spin" />
+            Waking up the server — this can take up to a minute on first load
+          </div>
+        )}
       </div>
       <div className="w-full max-w-xs flex flex-col gap-3">
         <button onClick={() => setPage("signup-type")} className="bg-white text-black rounded-full py-4 text-sm font-semibold">Get Started</button>
@@ -752,6 +783,12 @@ export default function App() {
             />
           </div>
 
+          {loadingSlots && slots.length === 0 && (
+            <div className="flex items-center gap-2 text-sm text-[#76777d] py-6 justify-center">
+              <Icon name="autorenew" className="text-base animate-spin" />
+              Loading available slots — first load can take up to a minute while the server wakes up.
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3 mb-6">
             {slots.map(slot => (
               <button key={slot.id} disabled={slot.is_booked} onClick={() => { setSelectedSlot(slot); setBookingError(null); }}
@@ -1002,7 +1039,7 @@ export default function App() {
                 </BarChart>
               </ResponsiveContainer>
             </>
-          ) : <div className="text-sm text-[#76777d]">Could not load revenue data</div>}
+          ) : loadingRevenue ? <div className="text-sm text-[#76777d]">Loading revenue data...</div> : <div className="text-sm text-[#76777d]">Could not load revenue data</div>}
         </div>
 
         {forecast && (
