@@ -8,11 +8,9 @@ const SHOP_IMG = "https://lh3.googleusercontent.com/aida-public/AB6AXuAYE_1RlMii
 const AVATAR_IMG = "https://lh3.googleusercontent.com/aida-public/AB6AXuDHl-KjFHqbsHCO04mxY4Gzz0a9FXXUrhDZL_v0y_8bNahG7BwbqgoY9HBhC6zKl_LbyT431EOHHF7yJrluLPWjJX5FfzvOJl9uHPUw3RAbBmFIHecmmW--VXAF4-9k1mQjJ07gErIvECBGLst1ML0Zy3xcKSolQkW4VW17aidWczXj_KRdxaDEpeqc6QsmYz3eCvL9_-HGJYYP89bGgYPSHMt_lXCqX-VimKq1Ny-A1Q0kWGStuve5abixy0JkeQPBL-eZm5a6PjE";
 
 type Slot = { id: string; start_time: string; end_time: string; service: string; base_price: number; incentive_price: number | null; incentive_label: string | null; is_peak: boolean; is_booked: boolean; };
-type Booking = { booking_id: string; customer_name: string; service: string; start_time: string; price_paid: number; incentive_applied: boolean; message: string; customer_phone?: string; customer_email?: string; payment_method?: string; };
+type Booking = { booking_id: string; customer_name: string; service: string; start_time: string; price_paid: number; incentive_applied: boolean; message: string; customer_phone?: string; customer_email?: string; payment_method?: string; customer_segment?: "New" | "Returning"; };
 type SavedBooking = Booking & { shopName: string; shopLocation: string };
 type ForecastReport = { shop_name: string; date: string; overall_summary: string; peak_warning: string; suggested_action: string; hourly_forecast: { hour: string; predicted_occupancy_pct: number; is_peak: boolean; forecast_label: string }[]; };
-type MetricInsight = { metric_name: string; change_pct: number; explanation: string };
-type MetricsInsights = { available: boolean; metrics: MetricInsight[] };
 type RevenuePoint = { label: string; revenue: number };
 type RevenueBreakdown = { today_total: number; today_by_hour: RevenuePoint[]; month_total: number; month_by_week: RevenuePoint[]; year_total: number; year_by_month: RevenuePoint[] };
 type OffpeakDeal = { deal_name: string; time_slot: string; customer_segment: string };
@@ -70,6 +68,41 @@ const OWNER_NAV: { key: string; label: string; icon: string; page?: Page }[] = [
   { key: "bookings", label: "Bookings", icon: "calendar_month", page: "owner-bookings" },
   { key: "data", label: "Data", icon: "bar_chart", page: "owner-data" },
   { key: "account", label: "Account", icon: "person", page: "owner-account" },
+];
+
+// Hardcoded for promo-video recording — no live API call, so the dashboard
+// renders instantly with no loading flicker on camera.
+const DEMO_METRICS: { key: string; label: string; value: string; delta: string; explanation: string }[] = [
+  { key: "Bookings filled", label: "Bookings filled", value: "11/12", delta: "+18% vs last Saturday", explanation: "Strong weekend demand driven by your 20% off-peak promotion pushed morning slots to near-full capacity." },
+  { key: "Revenue", label: "Revenue", value: "$312", delta: "+$64 vs yesterday", explanation: "Higher average spend per customer today — 4 customers upgraded to Haircut + Shave after seeing the bundle deal." },
+  { key: "Off-peak deals", label: "Off-peak deals", value: "5", delta: "3 new customers acquired", explanation: "3 first-time customers booked off-peak slots this morning, suggesting your quiet-hours pricing is attracting new clientele." },
+];
+
+const DEMO_DEMAND_DATA: { hour: string; predicted: number; actual: number }[] = [
+  { hour: "09:00", predicted: 25, actual: 20 },
+  { hour: "10:00", predicted: 35, actual: 30 },
+  { hour: "11:00", predicted: 30, actual: 35 },
+  { hour: "12:00", predicted: 88, actual: 92 },
+  { hour: "13:00", predicted: 90, actual: 95 },
+  { hour: "14:00", predicted: 45, actual: 40 },
+  { hour: "15:00", predicted: 35, actual: 30 },
+  { hour: "16:00", predicted: 40, actual: 45 },
+  { hour: "17:00", predicted: 82, actual: 85 },
+  { hour: "18:00", predicted: 90, actual: 95 },
+  { hour: "19:00", predicted: 88, actual: 92 },
+  { hour: "20:00", predicted: 80, actual: 85 },
+];
+
+// Hardcoded for promo-video recording — realistic Singapore customers, no live fetch.
+const DEMO_BOOKINGS: Booking[] = [
+  { booking_id: "demo-1", customer_name: "Wei Jie Tan", service: "Haircut", start_time: "2026-06-27T09:15:00", price_paid: 24, incentive_applied: true, message: "Booking confirmed for Wei Jie Tan! You saved $6.0 by booking during quiet hours.", customer_phone: "+65 9123 4561", customer_email: "weijie.tan@example.com", payment_method: "apple-pay", customer_segment: "Returning" },
+  { booking_id: "demo-2", customer_name: "Rajan Subramaniam", service: "Shave", start_time: "2026-06-27T10:30:00", price_paid: 16, incentive_applied: true, message: "Booking confirmed for Rajan Subramaniam! You saved $4.0 by booking during quiet hours.", customer_phone: "+65 9123 4562", customer_email: "rajan.s@example.com", payment_method: "card", customer_segment: "New" },
+  { booking_id: "demo-3", customer_name: "Marcus Lim", service: "Haircut + Shave", start_time: "2026-06-27T12:15:00", price_paid: 45, incentive_applied: false, message: "Booking confirmed for Marcus Lim! See you at 12:15 PM.", customer_phone: "+65 9123 4563", customer_email: "marcus.lim@example.com", payment_method: "cash", customer_segment: "Returning" },
+  { booking_id: "demo-4", customer_name: "Daniel Teo", service: "Haircut", start_time: "2026-06-27T13:00:00", price_paid: 30, incentive_applied: false, message: "Booking confirmed for Daniel Teo! See you at 01:00 PM.", customer_phone: "+65 9123 4564", customer_email: "daniel.teo@example.com", payment_method: "apple-pay", customer_segment: "New" },
+  { booking_id: "demo-5", customer_name: "Jason Koh", service: "Haircut", start_time: "2026-06-27T14:30:00", price_paid: 24, incentive_applied: true, message: "Booking confirmed for Jason Koh! You saved $6.0 by booking during quiet hours.", customer_phone: "+65 9123 4565", customer_email: "jason.koh@example.com", payment_method: "cash", customer_segment: "New" },
+  { booking_id: "demo-6", customer_name: "Priya Menon", service: "Haircut + Shave", start_time: "2026-06-27T17:15:00", price_paid: 45, incentive_applied: false, message: "Booking confirmed for Priya Menon! See you at 05:15 PM.", customer_phone: "+65 9123 4566", customer_email: "priya.menon@example.com", payment_method: "card", customer_segment: "Returning" },
+  { booking_id: "demo-7", customer_name: "Ethan Wong", service: "Shave", start_time: "2026-06-27T18:00:00", price_paid: 20, incentive_applied: false, message: "Booking confirmed for Ethan Wong! See you at 06:00 PM.", customer_phone: "+65 9123 4567", customer_email: "ethan.wong@example.com", payment_method: "apple-pay", customer_segment: "Returning" },
+  { booking_id: "demo-8", customer_name: "Amirul Hakim", service: "Haircut", start_time: "2026-06-27T19:30:00", price_paid: 30, incentive_applied: false, message: "Booking confirmed for Amirul Hakim! See you at 07:30 PM.", customer_phone: "+65 9123 4568", customer_email: "amirul.hakim@example.com", payment_method: "cash", customer_segment: "New" },
 ];
 
 function Icon({ name, className = "", filled = false }: { name: string; className?: string; filled?: boolean }) {
@@ -149,18 +182,18 @@ export default function App() {
   const [offerStartTime, setOfferStartTime] = useState("14:00");
   const [offerEndTime, setOfferEndTime] = useState("17:00");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", bizName: "", location: "", service: "", price: "" });
-  const [ownerSlots, setOwnerSlots] = useState<Slot[]>([]);
-  const [metricsInsights, setMetricsInsights] = useState<MetricsInsights | null>(null);
-  const [loadingInsights, setLoadingInsights] = useState(false);
   const [revenueBreakdown, setRevenueBreakdown] = useState<RevenueBreakdown | null>(null);
   const [revenueTab, setRevenueTab] = useState<"today" | "month" | "year">("today");
   const [offpeakDeals, setOffpeakDeals] = useState<OffpeakDeal[]>([]);
-  const [todaysBookings, setTodaysBookings] = useState<Booking[]>([]);
   const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
   const [historicalData, setHistoricalData] = useState<HistoricalDay[]>([]);
   const [weeklyStrategy, setWeeklyStrategy] = useState<WeeklyStrategy | null>(null);
   const [loadingStrategy, setLoadingStrategy] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [page]);
 
   useEffect(() => {
     // Render's free tier spins the backend down after idle — fire a silent warmup ping
@@ -190,20 +223,9 @@ export default function App() {
   useEffect(() => { if (page === "owner-dashboard" || page === "owner-data") { setLoadingForecast(true); fetch(`${API}/slots/demand-forecast`).then(r => r.json()).then(d => { setForecast(d); setLoadingForecast(false); }); } }, [page]);
   useEffect(() => {
     if (page !== "owner-dashboard") return;
-    fetch(`${API}/slots`).then(r => r.json()).then(setOwnerSlots).catch(() => setOwnerSlots([]));
     setLoadingRevenue(true);
     fetch(`${API}/bookings/revenue-breakdown`).then(r => r.json()).then(setRevenueBreakdown).catch(() => setRevenueBreakdown(null)).finally(() => setLoadingRevenue(false));
     fetch(`${API}/bookings/offpeak-today`).then(r => r.json()).then(setOffpeakDeals).catch(() => setOffpeakDeals([]));
-    setLoadingInsights(true);
-    fetch(`${API}/bookings/metrics-insights`)
-      .then(r => r.json())
-      .then(setMetricsInsights)
-      .catch(() => setMetricsInsights({ available: false, metrics: [] }))
-      .finally(() => setLoadingInsights(false));
-  }, [page]);
-  useEffect(() => {
-    if (page !== "owner-bookings") return;
-    fetch(`${API}/bookings/today`).then(r => r.json()).then(setTodaysBookings).catch(() => setTodaysBookings([]));
   }, [page]);
   useEffect(() => {
     if (page !== "owner-data") return;
@@ -947,26 +969,11 @@ export default function App() {
 
   // ─── OWNER DASHBOARD ───
   if (page === "owner-dashboard") {
-    const bookedToday = ownerSlots.filter(s => s.is_booked).length;
-    const totalToday = ownerSlots.length || 12;
-    const metricRows = [
-      { key: "Bookings filled", label: "Bookings filled", value: `${bookedToday}/${totalToday}` },
-      { key: "Revenue", label: "Revenue", value: `$${revenueBreakdown?.today_total ?? 0}` },
-      { key: "Off-peak deals", label: "Off-peak deals", value: `${offpeakDeals.length}` },
-    ];
-
     const currentHour = new Date().getHours();
-    const demandData = (forecast?.hourly_forecast ?? []).map(h => {
-      const hour = parseInt(h.hour.split(":")[0], 10);
-      const isPast = hour <= currentHour;
-      const slot = ownerSlots.find(s => new Date(s.start_time).getHours() === hour);
-      return {
-        hour: h.hour,
-        predicted: h.predicted_occupancy_pct,
-        actual: isPast ? (slot?.is_booked ? 100 : 0) : null,
-        isNow: hour === currentHour,
-      };
-    });
+    const demandData = DEMO_DEMAND_DATA.map(h => ({
+      ...h,
+      isNow: parseInt(h.hour.split(":")[0], 10) === currentHour,
+    }));
 
     const revenueChartData = revenueTab === "today" ? (revenueBreakdown?.today_by_hour ?? [])
       : revenueTab === "month" ? (revenueBreakdown?.month_by_week ?? [])
@@ -991,19 +998,14 @@ export default function App() {
         </div>
 
         <div className="border-t border-[#e4e2e4] mt-4">
-          {metricRows.map(m => {
-            const insight = metricsInsights?.metrics.find(mi => mi.metric_name === m.key);
+          {DEMO_METRICS.map(m => {
             return (
               <div key={m.key} className="py-4 border-b border-[#e4e2e4]">
                 <div className="flex items-baseline justify-between">
                   <div><div className={styles.labelTight + " mb-1"}>{m.label}</div><div className="text-2xl font-bold">{m.value}</div></div>
-                  {insight ? (
-                    <div className={`text-xs font-semibold ${insight.change_pct >= 0 ? "text-[#22C55E]" : "text-red-500"}`}>{insight.change_pct > 0 ? "+" : ""}{insight.change_pct}%</div>
-                  ) : loadingInsights ? (
-                    <div className="text-xs text-[#76777d]">...</div>
-                  ) : null}
+                  <div className="text-xs font-semibold text-[#22C55E]">{m.delta}</div>
                 </div>
-                {insight && <div className="text-xs text-[#45464d] mt-2 leading-relaxed">{insight.explanation}</div>}
+                <div className="text-xs text-[#45464d] mt-2 leading-relaxed">{m.explanation}</div>
               </div>
             );
           })}
@@ -1132,12 +1134,12 @@ export default function App() {
       </header>
       <div className="pt-20 px-5 pb-28">
         <div className="text-2xl font-bold tracking-tight mb-1">Today's Bookings</div>
-        <div className="text-sm text-[#45464d] mb-5">{todaysBookings.length} confirmed booking{todaysBookings.length === 1 ? "" : "s"} today</div>
-        {todaysBookings.length === 0 ? (
+        <div className="text-sm text-[#45464d] mb-5">{DEMO_BOOKINGS.length} confirmed booking{DEMO_BOOKINGS.length === 1 ? "" : "s"} today</div>
+        {DEMO_BOOKINGS.length === 0 ? (
           <div className="text-center text-sm text-[#76777d] py-16">No confirmed bookings yet today.</div>
         ) : (
           <div className="flex flex-col gap-3">
-            {todaysBookings.map(b => {
+            {DEMO_BOOKINGS.map(b => {
               const badge = paymentBadge(b.payment_method);
               const expanded = expandedBookingId === b.booking_id;
               return (
@@ -1157,6 +1159,8 @@ export default function App() {
                     <div className="mt-3 pt-3 border-t border-[#e4e2e4] flex flex-col gap-1.5 text-xs text-[#45464d]">
                       <span className="flex items-center gap-1"><Icon name="mail" className="text-sm" />{b.customer_email || "—"}</span>
                       <span className="flex items-center gap-1"><Icon name="call" className="text-sm" />{b.customer_phone || "—"}</span>
+                      <span className="flex items-center gap-1"><Icon name="credit_card" className="text-sm" />{b.payment_method === "apple-pay" ? "Apple Pay" : b.payment_method === "card" ? "Card" : "Cash"}</span>
+                      <span className="flex items-center gap-1"><Icon name="person" className="text-sm" />{b.customer_segment ?? "—"} customer</span>
                       <span className="flex items-center gap-1"><Icon name="calendar_month" className="text-sm" />{new Date(b.start_time).toLocaleDateString("en-SG", { weekday: "long", day: "numeric", month: "long" })}</span>
                       {b.incentive_applied && <span className="text-[#166534] font-semibold mt-1">{b.message}</span>}
                     </div>
