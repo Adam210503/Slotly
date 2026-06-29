@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from datetime import datetime, timedelta
-from models.schema import Slot, IncentiveRecommendation, DemandForecast, DemandForecastReport
+from models.schema import Slot, IncentiveRecommendation, DemandForecast, DemandForecastReport, DashboardExplainRequest, DashboardExplainResponse
 from openai import OpenAI
 import os, json, uuid
 
@@ -201,3 +201,33 @@ async def get_demand_forecast():
         suggested_action=result["suggested_action"],
         hourly_forecast=hourly
     )
+
+@router.post("/dashboard/explain", response_model=DashboardExplainResponse)
+async def explain_metric(request: DashboardExplainRequest):
+    prompt = f"""
+    You are a trusted business advisor speaking directly to a barbershop owner
+    about their dashboard for today.
+
+    Metric: {request.metric}
+    Current value: {request.value}
+    Change: {request.change}
+    Context: {request.context}
+
+    Write a one-sentence, plain-English explanation of what's driving this
+    number, using the specific context given. Be concrete and specific —
+    reference the actual context provided. Do not use generic filler like
+    "this is due to increased demand" or "this is likely due to various factors."
+
+    Respond only in JSON with key "explanation" containing the one sentence.
+    """
+
+    try:
+        response = get_client().chat.completions.create(
+            model="gpt-4o",
+            response_format={"type": "json_object"},
+            messages=[{"role": "user", "content": prompt}]
+        )
+        result = json.loads(response.choices[0].message.content)
+        return DashboardExplainResponse(explanation=result["explanation"])
+    except Exception:
+        return DashboardExplainResponse(explanation=f"{request.metric} moved because of {request.context.lower()}")

@@ -90,3 +90,12 @@ class HistoricalDay(BaseModel):
 class WeeklyStrategyResponse(BaseModel):
     available: bool
     recommendations: list[str]
+
+class DashboardExplainRequest(BaseModel):
+    metric: str
+    value: str
+    change: str
+    context: str
+
+class DashboardExplainResponse(BaseModel):
+    explanation: str

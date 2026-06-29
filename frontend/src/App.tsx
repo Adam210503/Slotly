@@ -17,7 +17,7 @@ type OffpeakDeal = { deal_name: string; time_slot: string; customer_segment: str
 type HistoricalDay = { date: string; total_bookings: number; revenue: number; offpeak_deals: number; avg_rating: number };
 type WeeklyStrategy = { available: boolean; recommendations: string[] };
 type User = { name: string; email: string; phone: string; type: "customer" | "business"; payment?: string };
-type Shop = { id: string; name: string; location: string; distance: string; rating: number; reviews: number; services: string[]; basePrice: number; favourite: boolean; tag?: string; lat: number; lng: number; reviews_list: { author: string; rating: number; comment: string; date: string }[]; };
+type Shop = { id: string; name: string; location: string; distance: string; rating: number; reviews: number; services: string[]; basePrice: number; favourite: boolean; tag?: string; lat: number; lng: number; image: string; reviews_list: { author: string; rating: number; comment: string; date: string }[]; };
 type Page = "splash" | "signup-type" | "signup-customer" | "signup-business" | "login" | "landing" | "shop" | "booking-confirm" | "owner-dashboard" | "leave-review" | "browse" | "profile" | "bookings" | "favorites" | "owner-bookings" | "owner-data" | "owner-account";
 
 const BACK_TARGETS: Partial<Record<Page, Page>> = {
@@ -34,7 +34,13 @@ const BACK_TARGETS: Partial<Record<Page, Page>> = {
   "owner-account": "owner-dashboard",
 };
 
-const SHOPS: Shop[] = [
+const SHOP_IMAGES = [
+  "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400",
+  "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400",
+  "https://images.unsplash.com/photo-1521490683712-35a1cb235d1c?w=400",
+];
+
+const SHOPS_DATA: Omit<Shop, "image">[] = [
   { id: "kens", name: "Ken's Barbershop", location: "Tanjong Pagar", distance: "0.3km", rating: 4.8, reviews: 124, services: ["Haircut", "Shave", "Haircut + Shave"], basePrice: 30, favourite: true, tag: "Closest", lat: 1.2763, lng: 103.8440, reviews_list: [{ author: "Wei Jie", rating: 5, comment: "Great cut, booked the off-peak slot and saved $6. Will come back.", date: "2 days ago" }, { author: "Rajan S.", rating: 5, comment: "Best barbershop in Tanjong Pagar. Always clean and on time.", date: "1 week ago" }, { author: "Marcus L.", rating: 4, comment: "Good experience, the AI deal for 9am was a nice touch.", date: "2 weeks ago" }] },
   { id: "upper", name: "Upper Cut SG", location: "Telok Ayer", distance: "0.7km", rating: 4.6, reviews: 89, services: ["Haircut", "Beard Trim", "Hair Wash"], basePrice: 28, favourite: false, tag: "Popular", lat: 1.2817, lng: 103.8461, reviews_list: [{ author: "Daniel T.", rating: 5, comment: "Friendly staff, quick service.", date: "3 days ago" }, { author: "Priya M.", rating: 4, comment: "Good value, the 20% deal made it worth coming at 10am.", date: "1 week ago" }] },
   { id: "fade", name: "Fade Studio", location: "Chinatown", distance: "0.9km", rating: 4.5, reviews: 67, services: ["Haircut", "Fade", "Styling"], basePrice: 35, favourite: false, tag: "Top Rated", lat: 1.2838, lng: 103.8435, reviews_list: [{ author: "Jason K.", rating: 5, comment: "Specialise in fades. Booked via Slotly easily.", date: "5 days ago" }] },
@@ -57,6 +63,8 @@ const SHOPS: Shop[] = [
   { id: "novena", name: "Novena Precision Cuts", location: "Novena", distance: "6km", rating: 4.7, reviews: 102, services: ["Haircut", "Executive Grooming", "Hot Towel Shave"], basePrice: 35, favourite: false, lat: 1.3203, lng: 103.8439, reviews_list: [{ author: "Timothy G.", rating: 5, comment: "Precise cuts, very professional.", date: "2 days ago" }] },
 ];
 
+const SHOPS: Shop[] = SHOPS_DATA.map((s, i) => ({ ...s, image: SHOP_IMAGES[i % 3] }));
+
 const CUSTOMER_NAV: { key: string; label: string; icon: string; page?: Page }[] = [
   { key: "search", label: "Search", icon: "search", page: "landing" },
   { key: "bookings", label: "Bookings", icon: "calendar_month", page: "bookings" },
@@ -72,10 +80,10 @@ const OWNER_NAV: { key: string; label: string; icon: string; page?: Page }[] = [
 
 // Hardcoded for promo-video recording — no live API call, so the dashboard
 // renders instantly with no loading flicker on camera.
-const DEMO_METRICS: { key: string; label: string; value: string; delta: string; explanation: string }[] = [
-  { key: "Bookings filled", label: "Bookings filled", value: "11/12", delta: "+18% vs last Saturday", explanation: "Strong weekend demand driven by your 20% off-peak promotion pushed morning slots to near-full capacity." },
-  { key: "Revenue", label: "Revenue", value: "$312", delta: "+$64 vs yesterday", explanation: "Higher average spend per customer today — 4 customers upgraded to Haircut + Shave after seeing the bundle deal." },
-  { key: "Off-peak deals", label: "Off-peak deals", value: "5", delta: "3 new customers acquired", explanation: "3 first-time customers booked off-peak slots this morning, suggesting your quiet-hours pricing is attracting new clientele." },
+const DEMO_METRICS: { key: string; label: string; value: string; delta: string; context: string; fallback: string }[] = [
+  { key: "Bookings filled", label: "Bookings filled", value: "11/12", delta: "+18% vs last Saturday", context: "11 of 12 slots booked today, up sharply from a typical Saturday; the 20% off-peak promotion was applied to morning slots.", fallback: "Strong weekend demand driven by your 20% off-peak promotion pushed morning slots to near-full capacity." },
+  { key: "Revenue", label: "Revenue", value: "$312", delta: "+$64 vs yesterday", context: "Today's projected revenue is $312, $64 higher than yesterday; 4 customers upgraded from a Haircut to the Haircut + Shave bundle.", fallback: "Higher average spend per customer today — 4 customers upgraded to Haircut + Shave after seeing the bundle deal." },
+  { key: "Off-peak deals", label: "Off-peak deals", value: "5", delta: "3 new customers acquired", context: "5 off-peak deals were redeemed today, and 3 of those customers were booking with this shop for the first time.", fallback: "3 first-time customers booked off-peak slots this morning, suggesting your quiet-hours pricing is attracting new clientele." },
 ];
 
 const DEMO_DEMAND_DATA: { hour: string; predicted: number; actual: number }[] = [
@@ -135,6 +143,16 @@ function Stars({ n }: { n: number }) {
   return <div className="flex gap-0.5">{[1,2,3,4,5].map(i => <span key={i} className="material-symbols-outlined text-amber-500 text-sm" style={{ fontVariationSettings: `'FILL' ${i <= n ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24` }}>star</span>)}</div>;
 }
 
+function TypingDots() {
+  return (
+    <div className="flex gap-1 items-center mt-2">
+      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-[#76777d]" />
+      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-[#76777d]" />
+      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-[#76777d]" />
+    </div>
+  );
+}
+
 function BottomNav({ active, items, onNav }: { active: string; items: { key: string; label: string; icon: string; page?: Page }[]; onNav: (p: Page) => void }) {
   return (
     <div className="fixed bottom-0 left-0 w-full bg-white border-t border-[#c6c6cd] flex justify-around items-center h-16 z-50">
@@ -181,10 +199,13 @@ export default function App() {
   const [businessDiscount, setBusinessDiscount] = useState(20);
   const [offerStartTime, setOfferStartTime] = useState("14:00");
   const [offerEndTime, setOfferEndTime] = useState("17:00");
+  const [offPeakSelectedHours, setOffPeakSelectedHours] = useState<Set<string>>(new Set(["14:00", "15:00", "16:00"]));
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", bizName: "", location: "", service: "", price: "" });
   const [revenueBreakdown, setRevenueBreakdown] = useState<RevenueBreakdown | null>(null);
   const [revenueTab, setRevenueTab] = useState<"today" | "month" | "year">("today");
   const [offpeakDeals, setOffpeakDeals] = useState<OffpeakDeal[]>([]);
+  const [metricExplanations, setMetricExplanations] = useState<Record<string, string>>({});
+  const [metricExplanationsLoading, setMetricExplanationsLoading] = useState<Record<string, boolean>>({});
   const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
   const [historicalData, setHistoricalData] = useState<HistoricalDay[]>([]);
   const [weeklyStrategy, setWeeklyStrategy] = useState<WeeklyStrategy | null>(null);
@@ -226,6 +247,19 @@ export default function App() {
     setLoadingRevenue(true);
     fetch(`${API}/bookings/revenue-breakdown`).then(r => r.json()).then(setRevenueBreakdown).catch(() => setRevenueBreakdown(null)).finally(() => setLoadingRevenue(false));
     fetch(`${API}/bookings/offpeak-today`).then(r => r.json()).then(setOffpeakDeals).catch(() => setOffpeakDeals([]));
+
+    setMetricExplanationsLoading(Object.fromEntries(DEMO_METRICS.map(m => [m.key, true])));
+    DEMO_METRICS.forEach(m => {
+      fetch(`${API}/dashboard/explain`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ metric: m.label, value: m.value, change: m.delta, context: m.context }),
+      })
+        .then(r => { if (!r.ok) throw new Error("explain failed"); return r.json(); })
+        .then(d => setMetricExplanations(prev => ({ ...prev, [m.key]: d.explanation })))
+        .catch(() => setMetricExplanations(prev => ({ ...prev, [m.key]: m.fallback })))
+        .finally(() => setMetricExplanationsLoading(prev => ({ ...prev, [m.key]: false })));
+    });
   }, [page]);
   useEffect(() => {
     if (page !== "owner-data") return;
@@ -263,6 +297,14 @@ export default function App() {
     setFavouriteIds(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleOffPeakHour(hour: string) {
+    setOffPeakSelectedHours(prev => {
+      const next = new Set(prev);
+      next.has(hour) ? next.delete(hour) : next.add(hour);
       return next;
     });
   }
@@ -501,7 +543,7 @@ export default function App() {
         <div className="flex justify-between items-baseline mb-3"><div className="font-bold text-lg">Curated Offers</div><button onClick={() => setPage("browse")} className="text-xs font-semibold text-[#45464d]">View All</button></div>
         <div className="flex gap-3 overflow-x-auto no-scrollbar mb-8 -mx-5 px-5">
           <div className="relative shrink-0 w-64 h-40 rounded-2xl overflow-hidden">
-            <img src={SHOP_IMG} alt="" className="w-full h-full object-cover" />
+            <img src={SHOPS[0].image} alt="" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
             <span className="absolute top-3 left-3 bg-white/90 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase">Member Exclusive</span>
             <div className="absolute bottom-3 left-3 right-3 text-white">
@@ -515,7 +557,7 @@ export default function App() {
         <div className="flex flex-col gap-3 mb-8">
           {SHOPS.filter(s => isFavourite(s.id)).map(shop => (
             <button key={shop.id} onClick={() => { setSelectedShop(shop); setOfferApplied(false); setPage("shop"); }} className="flex items-center gap-3 border border-[#c6c6cd] rounded-2xl p-3 text-left">
-              <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"><img src={SHOP_IMG} alt="" className="w-full h-full object-cover" /></div>
+              <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"><img src={shop.image} alt="" className="w-full h-full object-cover" /></div>
               <div className="flex-1"><div className="font-semibold text-sm">{shop.name}</div><div className="text-xs text-[#45464d]">{shop.location} · {shop.distance}</div></div>
               <div className="flex items-center gap-2">
                 <RatingBadge rating={shop.rating} />
@@ -532,7 +574,7 @@ export default function App() {
         <div className="flex flex-col gap-3">
           {SHOPS.map(shop => (
             <button key={shop.id} onClick={() => { setSelectedShop(shop); setOfferApplied(false); setPage("shop"); }} className="flex items-center gap-3 border border-[#c6c6cd] rounded-2xl p-3 text-left">
-              <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"><img src={SHOP_IMG} alt="" className="w-full h-full object-cover" /></div>
+              <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"><img src={shop.image} alt="" className="w-full h-full object-cover" /></div>
               <div className="flex-1">
                 <div className="font-semibold text-sm">{shop.name}</div>
                 <div className="text-xs text-[#45464d]">{shop.location} · {shop.distance}</div>
@@ -609,7 +651,7 @@ export default function App() {
           <div className="flex flex-col gap-3">
             {filtered.map(shop => (
               <button key={shop.id} onClick={() => { setSelectedShop(shop); setOfferApplied(false); setPage("shop"); }} className="flex items-center gap-3 border border-[#c6c6cd] rounded-2xl p-3 text-left">
-                <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"><img src={SHOP_IMG} alt="" className="w-full h-full object-cover" /></div>
+                <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"><img src={shop.image} alt="" className="w-full h-full object-cover" /></div>
                 <div className="flex-1">
                   <div className="font-semibold text-sm">{shop.name}</div>
                   <div className="text-xs text-[#45464d]">{shop.location} · {shop.distance}</div>
@@ -720,7 +762,7 @@ export default function App() {
             <div className="flex flex-col gap-3">
               {favShops.map(shop => (
                 <div key={shop.id} role="button" tabIndex={0} onClick={() => { setSelectedShop(shop); setOfferApplied(false); setPage("shop"); }} onKeyDown={e => { if (e.key === "Enter") { setSelectedShop(shop); setOfferApplied(false); setPage("shop"); } }} className="flex items-center gap-3 border border-[#c6c6cd] rounded-2xl p-3 text-left cursor-pointer">
-                  <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"><img src={SHOP_IMG} alt="" className="w-full h-full object-cover" /></div>
+                  <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"><img src={shop.image} alt="" className="w-full h-full object-cover" /></div>
                   <div className="flex-1">
                     <div className="font-semibold text-sm">{shop.name}</div>
                     <div className="text-xs text-[#45464d]">{shop.location} · {shop.distance}</div>
@@ -751,7 +793,7 @@ export default function App() {
       </header>
       <div className="pt-16">
         <div className="w-full h-48 overflow-hidden">
-          <img src={SHOP_IMG} alt={selectedShop.name} className="w-full h-full object-cover" />
+          <img src={selectedShop.image} alt={selectedShop.name} className="w-full h-full object-cover" />
         </div>
         <div className="px-5 -mt-6 relative z-10">
           <div className="bg-white border border-[#c6c6cd] rounded-2xl p-4 mb-4 shadow-md">
@@ -902,7 +944,10 @@ export default function App() {
         </div>
         <div className="border-t border-[#e4e2e4] pt-4 mb-4">
           <div className="text-[10px] uppercase tracking-widest text-[#76777d] mb-1">Location</div>
-          <div className="flex items-center gap-1 text-sm font-medium"><Icon name="location_on" className="text-base" />{selectedShop.name}, {selectedShop.location}</div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0"><img src={selectedShop.image} alt="" className="w-full h-full object-cover" /></div>
+            <div className="flex items-center gap-1 text-sm font-medium"><Icon name="location_on" className="text-base" />{selectedShop.name}, {selectedShop.location}</div>
+          </div>
         </div>
         <div className="border-t border-[#e4e2e4] pt-4 flex items-center justify-between">
           <div className="text-[10px] uppercase tracking-widest text-[#76777d]">Payment Method</div>
@@ -935,7 +980,7 @@ export default function App() {
       <div className="px-5 pt-6"><button onClick={() => setPage("booking-confirm")}><Icon name="arrow_back" /></button></div>
       <div className="px-5 pt-4 pb-16">
         <div className="flex items-center gap-3 border border-[#c6c6cd] rounded-2xl p-3 mb-6">
-          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"><img src={SHOP_IMG} alt="" className="w-full h-full object-cover" /></div>
+          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"><img src={selectedShop.image} alt="" className="w-full h-full object-cover" /></div>
           <div><div className="font-bold text-sm">{confirmation?.service ?? "Haircut"}</div><div className="text-xs text-[#45464d]">Completed on {confirmation ? formatTime(confirmation.start_time) : ""}</div></div>
         </div>
 
@@ -999,13 +1044,17 @@ export default function App() {
 
         <div className="border-t border-[#e4e2e4] mt-4">
           {DEMO_METRICS.map(m => {
+            const isLoading = metricExplanationsLoading[m.key];
+            const explanation = metricExplanations[m.key];
             return (
               <div key={m.key} className="py-4 border-b border-[#e4e2e4]">
                 <div className="flex items-baseline justify-between">
                   <div><div className={styles.labelTight + " mb-1"}>{m.label}</div><div className="text-2xl font-bold">{m.value}</div></div>
                   <div className="text-xs font-semibold text-[#22C55E]">{m.delta}</div>
                 </div>
-                <div className="text-xs text-[#45464d] mt-2 leading-relaxed">{m.explanation}</div>
+                {isLoading ? <TypingDots /> : explanation ? (
+                  <div key={explanation} className="fade-in text-xs text-[#45464d] mt-2 leading-relaxed">{explanation}</div>
+                ) : null}
               </div>
             );
           })}
@@ -1073,13 +1122,29 @@ export default function App() {
           <input type="range" min={0} max={100} value={businessDiscount} onChange={e => setBusinessDiscount(Number(e.target.value))} className="w-full accent-black mb-4" />
           <div className={styles.labelTight + " mb-1"}>Offer message</div>
           <input placeholder="e.g. FLASH SALE" className={styles.input + " mb-4"} />
-          <div className={styles.labelTight + " mb-1"}>Off-peak time slot</div>
-          <div className="flex gap-3 mb-4">
-            <div className="flex-1"><div className="text-xs text-[#45464d] mb-1">From</div><input type="time" value={offerStartTime} onChange={e => setOfferStartTime(e.target.value)} className={styles.input} /></div>
-            <div className="flex-1"><div className="text-xs text-[#45464d] mb-1">To</div><input type="time" value={offerEndTime} onChange={e => setOfferEndTime(e.target.value)} className={styles.input} /></div>
+          <div className={styles.labelTight + " mb-2"}>Select time slots to apply discount</div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {DEMO_DEMAND_DATA.map(d => {
+              const selected = offPeakSelectedHours.has(d.hour);
+              return (
+                <button
+                  key={d.hour}
+                  onClick={() => toggleOffPeakHour(d.hour)}
+                  style={{ maxWidth: 80 }}
+                  className={`flex-1 min-w-[64px] flex flex-col items-center justify-center px-2 py-1 rounded-xl text-xs font-semibold transition-colors ${selected ? "bg-black text-white" : "bg-white border border-black text-black"}`}
+                >
+                  <span>{formatTimeOfDay(d.hour)}</span>
+                  <span className={`text-[10px] font-normal ${selected ? "text-white/70" : "text-[#76777d]"}`}>{businessDiscount}% off</span>
+                </button>
+              );
+            })}
           </div>
           <button className="w-full bg-black text-white rounded-full py-3 text-sm font-bold uppercase tracking-widest">Push Live Offer</button>
-          <div className="mt-3 bg-[#F0FDF4] border border-[#DCFCE7] rounded-xl p-3 text-xs font-semibold text-[#166534]">✦ Active: {businessDiscount}% off from {formatTimeOfDay(offerStartTime)} to {formatTimeOfDay(offerEndTime)}</div>
+          {offPeakSelectedHours.size > 0 && (
+            <div className="mt-3 bg-[#F0FDF4] border border-[#DCFCE7] rounded-xl p-3 text-xs font-semibold text-[#166534]">
+              ✦ Active: {businessDiscount}% off at {DEMO_DEMAND_DATA.map(d => d.hour).filter(h => offPeakSelectedHours.has(h)).map(formatTimeOfDay).join(", ")}
+            </div>
+          )}
         </div>
 
         <div className="border border-[#c6c6cd] bg-white rounded-2xl p-5 mb-6">
